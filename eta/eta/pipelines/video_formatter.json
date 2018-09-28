@@ -1,0 +1,29 @@
+{
+    "info": {
+        "name": "video_formatter",
+        "type": "eta.core.types.Pipeline",
+        "version": "0.1.0",
+        "description": "A pipeline for formatting video files"
+    },
+    "inputs": ["video"],
+    "outputs": ["formatted_video"],
+    "modules": {
+        "format_videos": {
+            "name": "format_videos",
+            "tunable_parameters": [
+                "fps", "size", "scale", "max_fps", "max_size"
+            ],
+            "set_parameters": {}
+        }
+    },
+    "connections": [
+        {
+            "source": "INPUT.video",
+            "sink": "format_videos.input_path"
+        },
+        {
+            "source": "format_videos.output_video_path",
+            "sink": "OUTPUT.formatted_video"
+        }
+    ]
+}

@@ -1,0 +1,34 @@
+{
+    "info": {
+        "name": "embed_vgg16",
+        "type": "eta.core.types.Module",
+        "version": "0.1.0",
+        "description": "A module for embedding videos into the VGG-16 feature space",
+        "exe": "embed_vgg16.py"
+    },
+    "inputs": [
+        {
+            "name": "video_path",
+            "type": "eta.core.types.Video",
+            "description": "The input video",
+            "required": true
+        }
+    ],
+    "outputs": [
+        {
+            "name": "backing_path",
+            "type": "eta.core.types.Directory",
+            "description": "The directory in which to write the embeddings",
+            "required": true
+        }
+    ],
+    "parameters": [
+        {
+            "name": "crop_box",
+            "type": "eta.core.types.Object",
+            "description": "A region of interest of each frame to extract before embedding",
+            "required": false,
+            "default": null
+        }
+    ]
+}
