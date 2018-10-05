@@ -26,8 +26,10 @@ import sys
 import numpy as np
 
 from eta.core.config import Config, ConfigError
+import eta.core.utils as etau
 import eta.core.image as etai
 import eta.core.module as etam
+import matplotlib.pyplot as plt
 
 
 class ConvolutionConfig(etam.BaseModuleConfig):
@@ -51,12 +53,20 @@ class DataConfig(Config):
         input_image (eta.core.types.Image): The input image
 
     Outputs:
-        filtered_image (eta.core.types.ImageFile): The result of convolution
+        filtered_image (eta.core.types.ImageFile): [None] The result of
+            convolution, stored in an image (all values are changed to fit
+            between 0 and 255)
+        filtered_matrix (eta.core.types.NpzFile): [None] The result of
+            convolution, stored in a matrix (all values, including their
+            signs, are maintained)
     '''
 
     def __init__(self, d):
         self.input_image = self.parse_string(d, "input_image")
-        self.filtered_image = self.parse_string(d, "filtered_image")
+        self.filtered_image = self.parse_string(
+            d, "filtered_image", default=None)
+        self.filtered_matrix = self.parse_string(
+            d, "filtered_matrix", default=None)
 
 
 class ParametersConfig(Config):
@@ -101,8 +111,7 @@ def _create_x_derivative_kernel():
     Returns:
         kernel: the x-derivative kernel
     '''
-    @TODO
-    # ADD CODE HERE
+    return np.array([[-1,1]])
 
 
 def _create_y_derivative_kernel():
@@ -112,28 +121,19 @@ def _create_y_derivative_kernel():
     Returns:
         kernel: the y-derivative kernel
     '''
-    @TODO
-    # ADD CODE HERE
-
+    return np.transpose(np.array([[-1,1]]))
 
 def _create_sobel_horizontal_kernel():
-    '''Creates the 3x3 horizontal sobel kernel.
-
-    Returns:
-        kernel: the sobel horizontal kernel
-    '''
-    @TODO
-    # ADD CODE HERE
+    return np.array([[1,0,-1],[2,0,-2],[1,0,-1]])
 
 
 def _create_sobel_vertical_kernel():
     '''Creates the 3x3 vertical sobel kernel.
 
     Returns:
-        kernel: the sobel vertical kernel
+        kernel: the sobel vertical kernel   
     '''
-    @TODO
-    # ADD CODE HERE
+    return np.array([[1,2,1],[0,0,0],[-1,-2,-1]])
 
 
 def _create_gaussian_kernel(sigma):
@@ -164,8 +164,41 @@ def _convolve(kernel, in_img):
         out_img: the result of convolving the input image with the specified
             kernel
     '''
-    @TODO
-    # ADD CODE HERE
+    # Get some sizes
+    m1, n1 = in_img.shape
+    m2 = kernel.shape[0]
+    n2 = kernel.shape[1]
+    print('m2,n2: ', m2,n2)
+    out_img = np.zeros([m1,n1])
+    print ('m,n = ', m1,n1)
+    # Pad Image
+    pad = max(m2,n2)//2 #3x3//2 = 1, 5x5//2=2 width, 15x15//2 = 7
+    in_img_pad = np.zeros((m1+2*pad,n1+2*pad))
+    in_img_pad[pad:(m1+pad),pad:(n1+pad)] = in_img
+    print("padded image shape", in_img_pad.shape)
+
+    # Perform Convolution
+    for (x,y) in np.ndindex(m1,n1):
+        #out_img[x,y]=(kernel*in_img_pad[x:x+m2,y:y+n2]).sum()
+        out_img[x,y]= np.dot(np.reshape(kernel,(m2*n2)),np.reshape((in_img_pad[x:x+m2,y:y+n2]),(m2*n2)))
+    
+    """for ind in np.ndindex(m1,n):
+        for ind2 in np.ndindex(m2,n2):
+            in_ind = tuple(np.subtract(ind,ind2) + ([pad,pad]))
+            #print("index1: ",  ind, "index2: ", ind2, "index - ind2 + pad", in_ind)
+            out_img[ind] = out_img[ind] + (in_img_pad[in_ind] * kernel[ind2])"""
+            
+    '''
+    # Pad Kernel to output matrix size
+    kern = np.zeros([m,n])
+    kern[0:kernel.shape[0], 0:kernel.shape[1]] = kernel
+
+    # Perform Convolution not the way to do it
+    for ind,x in np.ndenumerate(out_img):
+        for ind2,x in np.ndenumerate(kernel):
+            out_img[ind] = out_img[ind] + in_img[ind2] * kern[tuple(np.subtract(ind,ind2))]
+            print("index1: ",  ind, "index2: ", ind2, "index - ind2", np.subtract(ind,ind2)) '''
+    return out_img
 
 
 def _perform_convolution(convolution_config):
@@ -202,7 +235,14 @@ def _perform_convolution(convolution_config):
                 in_img = etai.gray_to_rgb(in_img)
 
         filtered_image = _convolve(kernel, in_img)
-        etai.write(filtered_image, data.filtered_image)
+        #plt.imshow(filtered_image, cmap='gray')
+        #plt.show()
+        if data.filtered_matrix:
+            etau.ensure_basedir(data.filtered_matrix)
+            np.savez(data.filtered_matrix, filtered_matrix=filtered_image)
+        if data.filtered_image:
+            etau.ensure_basedir(data.filtered_image)
+            etai.write(filtered_image, data.filtered_image)
 
 
 def run(config_path, pipeline_config_path=None):

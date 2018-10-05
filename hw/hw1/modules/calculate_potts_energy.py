@@ -48,9 +48,9 @@ class DataConfig(Config):
     '''Data configuration settings.
 
     Inputs:
-        x_derivative_path (eta.core.types.Image): The result of convolving
+        x_derivative_path (eta.core.types.NpzFile): The result of convolving
             the original image with the "x_derivative" kernel
-        y_derivative_path (eta.core.types.Image): The result of convolving
+        y_derivative_path (eta.core.types.NpzFile): The result of convolving
             the original image with the "y_derivative" kernel
 
     Outputs:
@@ -74,8 +74,29 @@ def _calculate_potts_energy(data):
     Returns:
         potts_energy: the Pott's Energy for the original image
     '''
-    @TODO
+    xder = np.load(data.x_derivative_path)["filtered_matrix"]
+    yder = np.load(data.y_derivative_path)["filtered_matrix"]
+
     # ADD CODE HERE
+    # Write code to calculate the Pott's Energy of the original image given
+    # 'x_derivative' and 'y_derivative'
+    potts_energy = 0
+
+    xen = np.count_nonzero(xder[0:-1, 0:xder.shape[1]]) 
+    yen = np.count_nonzero(yder[0:yder.shape[0], 0:-1]) 
+    print("X Energy: ",xen, "Y Energy: ",yen)
+    potts_energy = xen + yen
+    xen,yen = 0,0
+
+    for ind,x in np.ndenumerate(xder):
+        #print(ind)
+        if xder[ind] != 0:
+            xen +=1
+    for ind,x in np.ndenumerate(yder):
+        if yder[ind] != 0:
+            yen +=1    
+    print("X Energy2: ",xen, "Y Energy2: ",yen)    
+    return potts_energy
 
 
 def run(config_path, pipeline_config_path=None):

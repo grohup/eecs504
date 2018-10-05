@@ -25,6 +25,7 @@ import numpy as np
 from eta.core.config import Config
 import eta.core.image as etai
 import eta.core.module as etam
+import matplotlib.pyplot as plt
 
 
 # CONSTANTS
@@ -52,11 +53,11 @@ class DataConfig(Config):
 
     Inputs:
         input_image (eta.core.types.Image): the input image
-        sobel_horizontal_result (eta.core.types.Image): The result of
+        sobel_horizontal_result (eta.core.types.NpzFile): The result of
             convolving the original image with the "sobel_horizontal" kernel.
             This will give the value of Gx (the gradient in the x
             direction).
-        sobel_vertical_result (eta.core.types.Image): The result of
+        sobel_vertical_result (eta.core.types.NpzFile): The result of
             convolving the original image with the "sobel_vertical" kernel.
             This will give the value of Gy (the gradient in the y
             direction).
@@ -114,11 +115,17 @@ def _create_intensity_orientation_matrices(Gx, Gy):
             the intensity matrix and the second element as the
             orientation matrix.
     '''
-    @TODO
-    # ADD CODE HERE
+    g_int = np.zeros_like(Gx)
+    g_orient = np.zeros_like(Gx)
+
+    for ind,_x in np.ndenumerate(Gx):
+        g_int[ind] = np.sqrt(Gx[ind]**2 + Gy[ind]**2)
+        g_orient[ind] = np.arctan2(Gy[ind],Gx[ind])
+
+    return (g_int, g_orient)
 
 
-def _non_maximum_suppression(g_intensity, orientation, input_image):
+def _non_maximum_suppression(g_int, orientation, input_image):
     '''Performs non-maximum suppression. If a pixel is not a local maximum
     (not bigger than it's neighbors with the same orientation), then
     suppress that pixel.
@@ -133,15 +140,48 @@ def _non_maximum_suppression(g_intensity, orientation, input_image):
             suppressed to 0 if the corresponding pixel was not a local
             maximum
     '''
-    @TODO
-    # ADD CODE HERE
+    p = np.pi 
+    g_sup = g_int
+
+    #normalize range of angles to [0,pi] from [-pi,pi]
+    orientation[orientation<0] = orientation[orientation<0] + p
+
+    plt.imshow(g_int, cmap='gray')
+    plt.title('intensity plot')
+    plt.show()
+
+    for (x,y) in np.ndindex(g_int.shape[0]-1,g_int.shape[1]-1):
+        
+        t_xy = orientation[x,y]
+        
+        # gradient = 0,180; edge is north,south dir, check east and est
+        if (t_xy <= p/8 or t_xy >= 7*p/8):
+            if (g_int[x,y] < g_int[x,y+1] and g_int[x,y] < g_int[x,y-1]): 
+                g_sup[x,y] = 0
+        # gradient = 90,270; edge is east,west dir, check north and south
+        if (t_xy > 3*p/8 and t_xy <= 5*p/8):
+            if (g_int[x,y] < g_int[x+1,y] and g_int[x,y] < g_int[x-1,y]): 
+                g_sup[x,y] = 0
+        # gradient = +45; edge is northwest, southeast, check northeast and southwest
+        if (t_xy > p/8 and t_xy <= 3*p/8):
+            if (g_int[x,y] < g_int[x-1,y-1] and g_int[x,y] < g_int[x+1,y+1]): 
+                g_sup[x,y] = 0
+         # check -45=+135, edge is northeast,southwest, check northwest and southeast
+        if (t_xy > 5*p/8 and t_xy <= 7*p/8):
+            if (g_int[x,y] < g_int[x+1,y-1] and g_int[x,y] < g_int[x-1,y+1]): 
+                g_sup[x,y] = 0
+    plt.imshow(g_sup, cmap='gray')
+    plt.show()
+    return g_sup
+
 
 
 def _double_thresholding(g_suppressed, low_threshold, high_threshold):
     '''Performs a double threhold. All pixels with gradient intensity larger
-    than 'high_threshold' are considered strong edges, and all pixels
-    with gradient intensity smaller than 'low_threshold' are suppressed
-    to 0.
+    than 'high_threshold' are considered strong edges, all pixels with gradient
+    intensity in between 'high_threshold' and 'low_threshold' are considered
+    weak edges, and all pixels with gradient intensity smaller than
+    'low_threshold' are suppressed to 0.
 
     Args:
         g_suppressed: the gradient intensities of all pixels, after
@@ -152,9 +192,23 @@ def _double_thresholding(g_suppressed, low_threshold, high_threshold):
     Returns:
         g_thresholded: the result of double thresholding
     '''
-    @TODO
-    # ADD CODE HERE
+    g_thresholded = np.zeros_like(g_suppressed)
 
+    #extract regions
+    ind_h = (g_suppressed > high_threshold)
+    ind_w = ((g_suppressed>low_threshold) & (g_suppressed < high_threshold))
+    ind_l =  g_suppressed<low_threshold
+
+    g_thresholded[ind_h] = STRONG
+    g_thresholded[ind_w] = WEAK
+    g_thresholded[ind_l] = SUPPRESSED
+
+    plt.imshow(g_thresholded, cmap='gray')
+    plt.show('g_thresholded')
+    plt.show()
+
+    return g_thresholded
+    
 
 def _hysteresis(g_thresholded):
     '''Performs hysteresis. If a weak pixel is connected to a strong pixel,
@@ -167,15 +221,27 @@ def _hysteresis(g_thresholded):
     Returns:
         g_strong: an image with only strong edges
     '''
-    @TODO
-    # ADD CODE HERE
+    #intialize
+    g_strong = g_thresholded
 
+    #find weak edges connected to hard edges and suppress
+    x,y = np.where(g_thresholded==WEAK)
+
+    for i in range(x.shape[0]):
+        #check a 3x3 cell for strongs
+        if np.any(g_thresholded[x[i]-1:x[i]+2, y[i]-1:y[i]+2] == STRONG):
+            g_strong[x[i],y[i]] = SUPPRESSED
+
+    plt.imshow(g_strong, cmap='gray')
+    plt.title('g_strong')
+    plt.show()
+    return g_strong
 
 def _perform_canny_edge_detection(canny_edge_config):
     for data in canny_edge_config.data:
         in_img = etai.read(data.input_image)
-        sobel_horiz = etai.read(data.sobel_horizontal_result)
-        sobel_vert = etai.read(data.sobel_vertical_result)
+        sobel_horiz = np.load(data.sobel_horizontal_result)["filtered_matrix"]
+        sobel_vert = np.load(data.sobel_vertical_result)["filtered_matrix"]
         (g_intensity, orientation) = _create_intensity_orientation_matrices(
                                         sobel_horiz,
                                         sobel_vert)

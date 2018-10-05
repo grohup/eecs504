@@ -15,13 +15,13 @@
         },
         {
             "name": "sobel_horizontal_result",
-            "type": "eta.core.types.Image",
+            "type": "eta.core.types.NpzFile",
             "description": "The result of convolving the original image with the \"sobel_horizontal\" kernel. This will give the value of Gx (the gradient in the x direction).",
             "required": true
         },
         {
             "name": "sobel_vertical_result",
-            "type": "eta.core.types.Image",
+            "type": "eta.core.types.NpzFile",
             "description": "The result of convolving the original image with the \"sobel_vertical\" kernel. This will give the value of Gy (the gradient in the y direction).",
             "required": true
         }
