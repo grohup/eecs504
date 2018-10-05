@@ -168,9 +168,7 @@ def _convolve(kernel, in_img):
     m1, n1 = in_img.shape
     m2 = kernel.shape[0]
     n2 = kernel.shape[1]
-    print('m2,n2: ', m2,n2)
-    out_img = np.zeros([m1,n1])
-    print ('m,n = ', m1,n1)
+
     # Pad Image
     pad = max(m2,n2)//2 #3x3//2 = 1, 5x5//2=2 width, 15x15//2 = 7
     in_img_pad = np.zeros((m1+2*pad,n1+2*pad))

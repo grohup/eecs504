@@ -61,7 +61,6 @@ def calc_homography(n):
     X = pts[0,0,0]
     print ('X1:', X, "\n")
 
-
     A = np.zeros((2*pts.shape[1], 9))
     for m in range(pts.shape[1]):
         print('m: ', m)
@@ -70,15 +69,15 @@ def calc_homography(n):
         A[2*m,:] = [x,y,1,0,0,0,-x*xs,-y*xs,-xs]
         A[2*m+1,:] = [0,0,0,x,y,1,-x*ys,-y*ys,-ys]
 
-    np.set_printoptions(precision=3)
-    print(A)
+    #np.set_printoptions(precision=3)
+    #print(A)
 
     U,S,Vh = np.linalg.svd(A, compute_uv=True)
+    #print('Vh.shape:', Vh.shape)
 
-    print('Vh.shape:', Vh.shape)
-
+    #grab right singular vector corresponding to smallest SingValue, normalize because numpy
     x = Vh[-1,:]/ np.linalg.norm(Vh[-1,:])
-    print('x:', x)
+    #print('x:', x)
 
     H = np.reshape(x,(3,3))
     print(H)
