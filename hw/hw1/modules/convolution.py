@@ -170,13 +170,15 @@ def _convolve(kernel, in_img):
     n2 = kernel.shape[1]
 
     # Pad Image
-    pad = max(m2,n2)//2 #3x3//2 = 1, 5x5//2=2 width, 15x15//2 = 7
+    pad = int(max(m2,n2))//2 #3x3//2 = 1, 5x5//2=2 width, 15x15//2 = 7
     in_img_pad = np.zeros((m1+2*pad,n1+2*pad))
     in_img_pad[pad:(m1+pad),pad:(n1+pad)] = in_img
     print("padded image shape", in_img_pad.shape)
+    out_img = np.zeros((m1-pad,n1-pad))
+
 
     # Perform Convolution
-    for (x,y) in np.ndindex(m1,n1):
+    for (x,y) in np.ndindex(int(m1-pad),int(n1-pad)):
         #out_img[x,y]=(kernel*in_img_pad[x:x+m2,y:y+n2]).sum()
         out_img[x,y]= np.dot(np.reshape(kernel,(m2*n2)),np.reshape((in_img_pad[x:x+m2,y:y+n2]),(m2*n2)))
     
