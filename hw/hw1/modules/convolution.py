@@ -105,23 +105,12 @@ class ParametersConfig(Config):
 
 
 def _create_x_derivative_kernel():
-    '''Creates a kernel that calculates the discrete x-derivative
-    of a 2-d image.
-
-    Returns:
-        kernel: the x-derivative kernel
-    '''
     return np.array([[-1,1]])
 
 
 def _create_y_derivative_kernel():
-    '''Creates a kernel that calculates the discrete y-derivative
-    of a 2-d image.
-
-    Returns:
-        kernel: the y-derivative kernel
-    '''
     return np.transpose(np.array([[-1,1]]))
+
 
 def _create_sobel_horizontal_kernel():
     return np.array([[1,0,-1],[2,0,-2],[1,0,-1]])
@@ -168,36 +157,15 @@ def _convolve(kernel, in_img):
     m1, n1 = in_img.shape
     m2 = kernel.shape[0]
     n2 = kernel.shape[1]
-
-    # Pad Image
+    #print(m1,n1)
+    # Image Frame
     pad = int(max(m2,n2))//2 #3x3//2 = 1, 5x5//2=2 width, 15x15//2 = 7
-    in_img_pad = np.zeros((m1+2*pad,n1+2*pad))
-    in_img_pad[pad:(m1+pad),pad:(n1+pad)] = in_img
-    print("padded image shape", in_img_pad.shape)
-    out_img = np.zeros((m1-pad,n1-pad))
+    out_img = np.zeros((m1-2*pad,n1-2*pad))
 
+    # Perform Convolution with no padding
+    for (x,y) in np.ndindex(int(m1-2*pad),int(n1-2*pad)):
+         out_img[x,y]= np.dot(np.reshape(kernel,(m2*n2)),np.reshape((in_img[x:x+m2,y:y+n2]),(m2*n2)))
 
-    # Perform Convolution
-    for (x,y) in np.ndindex(int(m1-pad),int(n1-pad)):
-        #out_img[x,y]=(kernel*in_img_pad[x:x+m2,y:y+n2]).sum()
-        out_img[x,y]= np.dot(np.reshape(kernel,(m2*n2)),np.reshape((in_img_pad[x:x+m2,y:y+n2]),(m2*n2)))
-    
-    """for ind in np.ndindex(m1,n):
-        for ind2 in np.ndindex(m2,n2):
-            in_ind = tuple(np.subtract(ind,ind2) + ([pad,pad]))
-            #print("index1: ",  ind, "index2: ", ind2, "index - ind2 + pad", in_ind)
-            out_img[ind] = out_img[ind] + (in_img_pad[in_ind] * kernel[ind2])"""
-            
-    '''
-    # Pad Kernel to output matrix size
-    kern = np.zeros([m,n])
-    kern[0:kernel.shape[0], 0:kernel.shape[1]] = kernel
-
-    # Perform Convolution not the way to do it
-    for ind,x in np.ndenumerate(out_img):
-        for ind2,x in np.ndenumerate(kernel):
-            out_img[ind] = out_img[ind] + in_img[ind2] * kern[tuple(np.subtract(ind,ind2))]
-            print("index1: ",  ind, "index2: ", ind2, "index - ind2", np.subtract(ind,ind2)) '''
     return out_img
 
 

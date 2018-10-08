@@ -16,7 +16,7 @@
             "set_parameters": {
                 "kernel_type": "gaussian",
                 "image_type": "grayscale",
-                "gaussian_sigma": 0.001
+                "gaussian_sigma": 0.08
             }
         },
         "sobel_horizontal": {
